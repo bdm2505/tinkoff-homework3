@@ -14,7 +14,7 @@ trait PrefixTree[K, +V] {
 
   def get: V
 
-  def apply(): Option[V]
+  def option: Option[V]
 }
 
 class MapPrefixTree[K, +V](val value: Option[V], val map: Map[K, MapPrefixTree[K, V]]) extends PrefixTree[K, V] {
@@ -30,14 +30,30 @@ class MapPrefixTree[K, +V](val value: Option[V], val map: Map[K, MapPrefixTree[K
     fun(path, this)
   }
 
-  override def put[U >: V](path: Seq[K], value: U): PrefixTree[K, U] = ???
+  override def put[U >: V](path: Seq[K], value: U): MapPrefixTree[K, U] = {
+
+    def getTree(path: Seq[K], currentTree: MapPrefixTree[K, U]): MapPrefixTree[K, U] = {
+      if (path.isEmpty)
+        PrefixTree(Some(value), currentTree.map)
+      else {
+        val tree =
+          if (currentTree.map.contains(path.head))
+            getTree(path.tail, currentTree.map(path.head))
+          else
+            getTree(path.tail, PrefixTree.empty)
+        PrefixTree(currentTree.value, currentTree.map + (path.head -> tree))
+      }
+    }
+
+    getTree(path, this)
+  }
 
   override def toString: String = {
     val sb = new StringBuilder(s"PrefixTree( value=$value\n")
 
     def fun(i: Int, tree: MapPrefixTree[K, V]): Unit = {
       tree.map.foreach { case (k, v) =>
-        sb.append(" " * i).append(k).append(" -> ").append(if (v().isDefined) v.get else "None").append("\n")
+        sb.append(" " * i).append(k).append(" -> ").append(if (v.option.isDefined) v.get else "None").append("\n")
         fun(i + 2, v)
       }
     }
@@ -48,7 +64,18 @@ class MapPrefixTree[K, +V](val value: Option[V], val map: Map[K, MapPrefixTree[K
 
   override def get: V = value.get
 
-  override def apply(): Option[V] = value
+  override def option: Option[V] = value
+
+
+  override def equals(other: Any): Boolean = other match {
+    case that: MapPrefixTree[K, V] =>
+      value == that.value && map == that.map
+    case _ => false
+  }
+
+  override def hashCode(): Int = {
+    31 * value.hashCode() + map.hashCode()
+  }
 }
 
 object PrefixTree {
@@ -58,8 +85,6 @@ object PrefixTree {
   def apply[K, V](value: Option[V], map: Map[K, MapPrefixTree[K, V]]): MapPrefixTree[K, V] =
     new MapPrefixTree(value, map)
 
-  implicit def toPrefixTree[K, V](elem: V): MapPrefixTree[K, V] = {
-    apply[K, V](Some(elem), Map.empty[K, MapPrefixTree[K, V]])
-  }
+  def put[K, V](path: Seq[K], value: V): MapPrefixTree[K, V] = empty.put(path, value)
 
 }
