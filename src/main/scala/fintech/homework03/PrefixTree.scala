@@ -23,8 +23,10 @@ class MapPrefixTree[K, +V](val value: Option[V], val map: Map[K, MapPrefixTree[K
     def fun(path: Seq[K], tree: MapPrefixTree[K, V]): PrefixTree[K, V] = {
       if (path.isEmpty)
         tree
-      else
+      else if (tree.map.contains(path.head))
         fun(path.tail, tree.map(path.head))
+      else
+        PrefixTree.empty
     }
 
     fun(path, this)

@@ -30,9 +30,9 @@ class PrefixTreeSpec extends FlatSpec with Matchers {
     tree.sub("abcd").get shouldEqual 34
     tree.sub("acn").get shouldEqual 54
     tree.sub("a").option shouldEqual None
-    assertThrows[NoSuchElementException]{
-      tree.sub("unknown path")
-    }
+    tree.sub("a").sub("cn").option shouldEqual Some(54)
+    tree.sub("unknown path") shouldEqual PrefixTree.empty
+
   }
 
 }
